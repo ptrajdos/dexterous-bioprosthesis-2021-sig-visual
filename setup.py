@@ -14,7 +14,7 @@ setup(
                 'dexterous_bioprosthesis_sig_visual.*',
                 ]),
         install_requires=[ 
-                'dexterous_bioprosthesis_2021_raw_datasets @ git+https://github.com/ptrajdos/dexterous-bioprosthesis-2021-raw-dataset.git@ba0f6f256a5d75af3d3129c998afba9a85a14658',
+                'dexterous_bioprosthesis_2021_raw_datasets @ git+https://github.com/ptrajdos/dexterous-bioprosthesis-2021-raw-dataset.git@72a8b9be4498680f024da6f57f54316b02fa89ba',
                 'matplotlib==3.8.3',
                 
         ],

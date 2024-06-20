@@ -21,20 +21,6 @@ from matplotlib.backends.backend_tkagg import (
 from dexterous_bioprosthesis_sig_visual import settings
 from functools import wraps
 
-def override_n_jobs_for_parallel(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        # Override n_jobs globally for Parallel instances
-        original_Parallel = joblib.Parallel
-        Parallel = lambda *a, **kw: original_Parallel(n_jobs=None, *a, **kw)
-        
-        try:
-            return func(*args, **kwargs)
-        finally:
-            # Restore the original Parallel class
-            joblib.Parallel = original_Parallel
-
-    return wrapper
 
 class RawSignalVisualizer(tk.Frame):
     def __init__(self, parent,data_path, *args, **kwargs):
@@ -97,9 +83,8 @@ class RawSignalVisualizer(tk.Frame):
             self._load_from_directory(dir_path)
 
     def _load_from_directory(self, path, subset='accepted'):
-        decorated_some_function = override_n_jobs_for_parallel(read_signals_from_dirs)
         
-        raw_set = decorated_some_function(path)[subset]
+        raw_set = read_signals_from_dirs(path, n_jobs=None)[subset]
         self._data_init(raw_set)
 
     def _data_init(self, raw_signals:RawSignals):
