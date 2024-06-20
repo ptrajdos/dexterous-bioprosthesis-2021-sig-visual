@@ -7,6 +7,8 @@ import numpy as np
 from dexterous_bioprosthesis_2021_raw_datasets.raw_signals.raw_signal import RawSignal
 from dexterous_bioprosthesis_2021_raw_datasets.raw_signals.raw_signals import RawSignals
 from dexterous_bioprosthesis_2021_raw_datasets.raw_signals.raw_signals_io import read_signals_from_dirs
+from tkinter import filedialog
+from tkinter import messagebox
 
 from scipy import signal
 
@@ -16,14 +18,9 @@ from matplotlib.backends.backend_tkagg import (
 from dexterous_bioprosthesis_sig_visual import settings
 
 class RawSignalVisualizer(tk.Frame):
-    def __init__(self, parent,raw_signals:RawSignals, *args, **kwargs):
+    def __init__(self, parent,data_path, *args, **kwargs):
         tk.Frame.__init__(self, parent,  *args, **kwargs, height=300)
         self.parent = parent
-        self.raw_signals = raw_signals
-
-        self.selected_signal:RawSignal= raw_signals[0]
-        self.selected_channel = self.selected_signal.signal[:,0]
-
 
         self.parent.protocol("WM_DELETE_WINDOW", self.on_closing)
         try:
@@ -34,15 +31,69 @@ class RawSignalVisualizer(tk.Frame):
         self.parent.title('Podgląd danych')
         self.zoom_val = 1
 
-
-        hello_label = tk.Label(self.parent, text="Hello, World!")
-        hello_label.pack(pady=20)
-
-    
-        self.listbox_signals_frame()
-        self.listbox_channels_frame()
-        self.plot_frame_init()
         self.bind_keys()
+        self._create_menubar()
+        self.init_listbox_signals()
+        self.init_listbox_channels_frame()
+        self.plot_frame_init()
+
+    def _create_menubar(self):
+        self.menubar = tk.Menu(self.parent)
+
+        self.file_menu = tk.Menu(self.menubar, tearoff=False)
+        self.file_menu.add_command(label="Open Directory", command=self.open_directory)
+
+        self.help_menu = tk.Menu(self.menubar, tearoff=0)
+        self.help_menu.add_command(label="Help", command=self.open_help_window)
+
+        self.menubar.add_cascade(label="File", menu=self.file_menu)
+        self.menubar.add_cascade(label="Help", menu=self.help_menu)
+
+
+
+        self.parent.config(menu=self.menubar)
+    
+    def open_help_window(self):
+        help_window = tk.Toplevel(self.parent)
+        help_window.title("Help")
+        help_window.geometry("800x600")
+        
+        help_text = """
+        Skróty klawiaturowe:
+        <Up>: Następny obiekt
+        <Down>: Poprzedni obiekt
+        <Left>: Następny kanał
+        <Right>: Poprzedni kanał
+        """
+
+        help_label = tk.Label(help_window, text=help_text)
+        help_label.pack(pady=20, padx=20)
+
+        ok_button = ttk.Button(help_window, text="OK", command=help_window.destroy)
+        ok_button.pack(pady=10)
+
+    def open_directory(self):
+        dir_path = filedialog.askdirectory(title="Open Directory")
+        if dir_path:
+            self._load_from_directory(dir_path)
+
+    def _load_from_directory(self, path, subset='accepted'):
+        raw_set = read_signals_from_dirs(path)[subset]
+        self._data_init(raw_set)
+
+    def _data_init(self, raw_signals:RawSignals):
+        self.set_data(raw_signals=raw_signals)
+        self.reload_listbox_signals()
+        self.reload_listbox_channels()
+        self.plot_selected_signal()
+
+
+    def set_data(self, raw_signals:RawSignals):
+        self.raw_signals = raw_signals
+        self.selected_signal:RawSignal= raw_signals[0]
+        self.selected_channel = self.selected_signal.signal[:,0]
+
+        
 
     def make_raw_signals_list_representation(self, raw_signals:RawSignals):
 
@@ -52,17 +103,15 @@ class RawSignalVisualizer(tk.Frame):
         self.parent.bind('<Escape>', self.on_closing)
         self.parent.bind('<Down>', self.next_object)
         self.parent.bind('<Up>', self.prev_object)
-        self.parent.bind('<Up>', self.prev_object)
         self.parent.bind('<Right>', self.next_channel)
         self.parent.bind('<Left>', self.prev_channel)
 
-    def listbox_signals_frame(self):
-        
-        frame_listbox = tk.Frame(self.parent,pady=1, padx=1)
-
+    def init_listbox_signals(self):
+        self.frame_listbox = tk.Frame(self.parent,pady=1, padx=1)
+        self.listbox_objects_var  = tk.Variable(value=[])
         self.listbox_objects = tk.Listbox(
-                    frame_listbox,
-                    listvariable=tk.Variable(value=self.make_raw_signals_list_representation(self.raw_signals)),
+                    self.frame_listbox,
+                    listvariable= self.listbox_objects_var,
                     width=20,
                     selectmode=tk.SINGLE,
                     font = ("Consolas", 10))
@@ -72,7 +121,7 @@ class RawSignalVisualizer(tk.Frame):
 
         
         scrollbar = ttk.Scrollbar(
-            frame_listbox,
+            self.frame_listbox,
             orient=tk.VERTICAL,
             command=self.listbox_objects.yview
         )
@@ -87,16 +136,48 @@ class RawSignalVisualizer(tk.Frame):
         self.listbox_objects.activate(0)
         self.listbox_objects.selection_anchor(0)
 
-        frame_listbox.pack(side="left", fill="both")
+        self.frame_listbox.pack(side="left", fill="both")
+        
+
+    def reload_listbox_signals(self):
+        
+        self.listbox_objects_var.set(self.make_raw_signals_list_representation(self.raw_signals))
+
+        self.listbox_objects.selection_clear(0, tk.END)
+        self.listbox_objects.selection_set(0)
+        self.listbox_objects.see(0)
+        self.listbox_objects.activate(0)
+        self.listbox_objects.selection_anchor(0)  
+       
+            
 
     def object_selected(self, event):
 
-        selected_objects_idxs = self.listbox_objects.curselection()
-        selected_object_idx = int( selected_objects_idxs[0])
+        try: 
 
-        self.selected_signal = self.raw_signals[selected_object_idx]
-        self.selected_channel = self.selected_signal.signal[:,0]
+            selected_objects_idxs = self.listbox_objects.curselection()
+            selected_object_idx = int( selected_objects_idxs[0])
 
+            self.selected_signal = self.raw_signals[selected_object_idx]
+            self.selected_channel = self.selected_signal.signal[:,0]
+
+
+            self.listbox_channels.selection_clear(0, tk.END)
+            self.listbox_channels.selection_set(0)
+            self.listbox_channels.see(0)
+            self.listbox_channels.activate(0)
+            self.listbox_channels.selection_anchor(0)
+
+            self.plot_selected_signal()
+        except IndexError as id:
+            pass
+        except Exception as e:
+            raise e
+
+
+
+    def reload_listbox_channels(self):
+        self.listbox_channels_variable.set([str(ch_name) for ch_name in self.selected_signal.channel_names ])
 
         self.listbox_channels.selection_clear(0, tk.END)
         self.listbox_channels.selection_set(0)
@@ -104,17 +185,15 @@ class RawSignalVisualizer(tk.Frame):
         self.listbox_channels.activate(0)
         self.listbox_channels.selection_anchor(0)
 
-        self.plot_selected_signal()
 
-
-
-    def listbox_channels_frame(self):
+    def init_listbox_channels_frame(self):
         
         frame_listbox = tk.Frame(self.parent,pady=1, padx=1)
+        self.listbox_channels_variable = tk.Variable(value=[])
 
         self.listbox_channels = tk.Listbox(
                     frame_listbox,
-                    listvariable=tk.Variable(value=[str(ch_name) for ch_name in self.selected_signal.channel_names ]),
+                    listvariable=self.listbox_channels_variable,
                     width=10,
                     selectmode=tk.SINGLE,
                     font = ("Consolas", 10))
@@ -143,12 +222,18 @@ class RawSignalVisualizer(tk.Frame):
 
     def channel_selected(self,event):
 
-        selected_channel_idxs = self.listbox_channels.curselection()
-        selected_channel_idx = int( selected_channel_idxs[0])
+        try: 
 
-        self.selected_channel = self.selected_signal.signal[:,selected_channel_idx]
-        
-        self.plot_selected_signal()
+            selected_channel_idxs = self.listbox_channels.curselection()
+            selected_channel_idx = int( selected_channel_idxs[0])
+
+            self.selected_channel = self.selected_signal.signal[:,selected_channel_idx]
+            
+            self.plot_selected_signal()
+        except IndexError as id:
+            pass
+        except Exception as e:
+            raise e
 
     def plot_selected_signal(self):
 
@@ -167,19 +252,19 @@ class RawSignalVisualizer(tk.Frame):
         ax1 =  self.canvas.figure.axes[1]
         ax1.clear()
 
-        # f, t, Sxx = signal.spectrogram(self.selected_channel,self.raw_signals.sample_rate)
-        # # cwt_sig = signal.cwt(self.selected_channel, wavelet=signal.ricker, widths=np.arange(1,3001))
-        # # cwt_sig_flip = np.flip(cwt_sig)
-        # ax1.pcolormesh(t, f, Sxx, shading='gouraud',cmap='viridis')
-        # # ax1.imshow(cwt_sig_flip)
-        # ax1.set_title('Spectrogram')
-        # ax1.set_ylabel('Frequency [Hz]')
-        # ax1.set_xlabel('Time [sec]')
+        f, t, Sxx = signal.spectrogram(self.selected_channel,self.raw_signals.sample_rate)
+        # cwt_sig = signal.cwt(self.selected_channel, wavelet=signal.ricker, widths=np.arange(1,3001))
+        # cwt_sig_flip = np.flip(cwt_sig)
+        ax1.pcolormesh(t, f, Sxx, shading='gouraud',cmap='viridis')
+        # ax1.imshow(cwt_sig_flip)
+        ax1.set_title('Spectrogram')
+        ax1.set_ylabel('Frequency [Hz]')
+        ax1.set_xlabel('Time [sec]')
 
-        # ax2 =  self.canvas.figure.axes[2]
-        # ax2.clear()
+        ax2 =  self.canvas.figure.axes[2]
+        ax2.clear()
 
-        # ax2.magnitude_spectrum(self.selected_channel, Fs=self.raw_signals.sample_rate, scale='dB', color='C1')
+        ax2.magnitude_spectrum(self.selected_channel, Fs=self.raw_signals.sample_rate, scale='dB', color='C1')
 
         self.canvas.draw()
 
@@ -203,8 +288,6 @@ class RawSignalVisualizer(tk.Frame):
         self.canvas.get_tk_widget().pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
 
         frame_listbox.pack(side="left", fill="both")
-
-        self.plot_selected_signal()
 
 
     def on_closing(self, event=None):
@@ -303,14 +386,8 @@ if __name__ == "__main__":
 
     data_path17 = os.path.join(settings.DATAPATH,"AW_18_06_2024_EMG")
 
-    raw_set17 = read_signals_from_dirs(data_path17)['accepted']
-    
-    r_set = raw_set17 
-   
-    
-    print("VIS")
-    
+
     root = tk.Tk()
-    RawSignalVisualizer(root, raw_signals=r_set).pack(side="top", fill="both", expand=True)
+    RawSignalVisualizer(root, data_path=data_path17).pack(side="top", fill="both", expand=True)
     root.mainloop()
     
