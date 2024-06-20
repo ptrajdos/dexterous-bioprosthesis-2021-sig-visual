@@ -42,6 +42,7 @@ def clean_compile_dir():
 def get_base_option_list():
     opt_list = [
 		'--collect-submodules', 'sklearn',
+		'--hidden-import', 'PIL._tkinter_finder',
 	    '--distpath', get_dist_dir(),'--workpath', get_build_dir(),'-y','--clean','--onefile','--console'
 	]
     return opt_list
