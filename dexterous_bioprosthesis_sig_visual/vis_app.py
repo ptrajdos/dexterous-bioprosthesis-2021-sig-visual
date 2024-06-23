@@ -64,6 +64,7 @@ class RawSignalVisualizer(tk.Frame):
         help_window.geometry("800x600")
         
         help_text = """
+        Otwieranie zbioru: File -> Open Directory
         Skróty klawiaturowe:
         <Up>: Następny obiekt
         <Down>: Poprzedni obiekt
@@ -231,11 +232,14 @@ class RawSignalVisualizer(tk.Frame):
         try: 
 
             selected_channel_idxs = self.listbox_channels.curselection()
-            selected_channel_idx = int( selected_channel_idxs[0])
+            if len(selected_channel_idxs)  == 1:
+                selected_channel_idx = int( selected_channel_idxs[0])
 
-            self.selected_channel = self.selected_signal.signal[:,selected_channel_idx]
-            
-            self.plot_selected_signal()
+                self.selected_channel = self.selected_signal.signal[:,selected_channel_idx]
+                
+                self.plot_selected_signal()
+                return
+
         except IndexError as id:
             pass
         except Exception as e:
