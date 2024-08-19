@@ -1,3 +1,4 @@
+import multiprocessing
 import os
 import tkinter as tk
 from tkinter import END, ttk, Button, messagebox
@@ -23,9 +24,10 @@ from functools import wraps
 
 
 class RawSignalVisualizer(tk.Frame):
-    def __init__(self, parent,data_path, *args, **kwargs):
+    def __init__(self, parent,n_jobs = None, *args, **kwargs):
         tk.Frame.__init__(self, parent,  *args, **kwargs, height=300)
         self.parent = parent
+        self.n_jobs = n_jobs
 
         self.parent.protocol("WM_DELETE_WINDOW", self.on_closing)
         try:
@@ -85,7 +87,7 @@ class RawSignalVisualizer(tk.Frame):
 
     def _load_from_directory(self, path, subset='accepted'):
         
-        raw_set = read_signals_from_dirs(path, n_jobs=None)[subset]
+        raw_set = read_signals_from_dirs(path, n_jobs=self.n_jobs, parallel_options={'backend':'multiprocessing'})[subset]
         self._data_init(raw_set)
 
     def _data_init(self, raw_signals:RawSignals):
@@ -393,11 +395,9 @@ class RawSignalVisualizer(tk.Frame):
 
 
 if __name__ == "__main__":
-
-    data_path17 = os.path.join(settings.DATAPATH,"AW_18_06_2024_EMG")
-
+    multiprocessing.freeze_support()
 
     root = tk.Tk()
-    RawSignalVisualizer(root, data_path=data_path17).pack(side="top", fill="both", expand=True)
+    RawSignalVisualizer(root, n_jobs=-1).pack(side="top", fill="both", expand=True)
     root.mainloop()
     
