@@ -2,7 +2,6 @@ import sys
 
 import platform
 import os
-import sys
 import shutil
 import PyInstaller.__main__
 

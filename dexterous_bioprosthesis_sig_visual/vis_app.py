@@ -1,28 +1,22 @@
 import multiprocessing
-import os
 import tkinter as tk
-from tkinter import END, ttk, Button, messagebox
+from tkinter import ttk
 
 from matplotlib.figure import Figure
-import numpy as np
 from dexterous_bioprosthesis_2021_raw_datasets.raw_signals.raw_signal import RawSignal
 from dexterous_bioprosthesis_2021_raw_datasets.raw_signals.raw_signals import RawSignals
 from dexterous_bioprosthesis_2021_raw_datasets.raw_signals.raw_signals_io import (
     read_signals_from_dirs,
 )
 from tkinter import filedialog
-from tkinter import messagebox
 
 from scipy import signal
 import joblib
-from joblib import Parallel
 
 joblib.parallel.DEFAULT_N_JOBS = None
 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 
-from dexterous_bioprosthesis_sig_visual import settings
-from functools import wraps
 
 
 class RawSignalVisualizer(tk.Frame):
@@ -175,7 +169,7 @@ class RawSignalVisualizer(tk.Frame):
             self.listbox_channels.selection_anchor(0)
 
             self.plot_selected_signal()
-        except IndexError as id:
+        except IndexError:
             pass
         except Exception as e:
             raise e
@@ -237,7 +231,7 @@ class RawSignalVisualizer(tk.Frame):
                 self.plot_selected_signal()
                 return
 
-        except IndexError as id:
+        except IndexError:
             pass
         except Exception as e:
             raise e
