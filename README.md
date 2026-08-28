@@ -76,6 +76,20 @@ python dexterous_bioprosthesis_sig_visual/compile_app.py build
 
 The compiled executable will be placed in `compiled_app/<platform>/dist/`.
 
+### Running the compiled application
+
+After building, run the standalone executable directly — no Python installation required:
+
+```bash
+# macOS / Linux
+./compiled_app/<platform>/dist/vis_app
+
+# Windows
+compiled_app\<platform>\dist\vis_app.exe
+```
+
+Replace `<platform>` with the platform string of the system used for building (e.g., `macOS-15.5-arm64-arm-64bit`).
+
 Other compile options:
 
 ```bash
