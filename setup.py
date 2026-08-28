@@ -23,6 +23,8 @@ setup(
             "coverage>=7.2.5",
             "pyinstaller>=6.6.0",
             "setuptools>=69.5.1",
+            "pdoc3>=0.11.1, <0.12",
+            "pylint>=3.3.9, <4.0.0"
         ],
     },
     test_suite="test",

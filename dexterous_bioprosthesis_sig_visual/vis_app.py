@@ -1,3 +1,9 @@
+"""Main module for the signal visualization application.
+
+Provides a tkinter-based GUI for browsing and visualizing raw signals,
+including time-domain plots, spectrograms, and magnitude spectra.
+"""
+
 import multiprocessing
 import tkinter as tk
 from tkinter import ttk
@@ -20,7 +26,19 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 
 
 class RawSignalVisualizer(tk.Frame):
+    """Tkinter frame for interactive visualization of raw signals.
+
+    Displays a list of signal objects and their channels, with plots
+    showing the time-domain signal, spectrogram, and magnitude spectrum.
+    """
+
     def __init__(self, parent, n_jobs=None, *args, **kwargs):
+        """Initialize the visualizer frame.
+
+        Args:
+            parent: Parent tkinter widget.
+            n_jobs: Number of parallel jobs for data loading. None uses the default.
+        """
         tk.Frame.__init__(self, parent, *args, **kwargs, height=300)
         self.parent = parent
         self.n_jobs = n_jobs
@@ -41,6 +59,7 @@ class RawSignalVisualizer(tk.Frame):
         self.plot_frame_init()
 
     def _create_menubar(self):
+        """Create the application menu bar with File and Help menus."""
         self.menubar = tk.Menu(self.parent)
 
         self.file_menu = tk.Menu(self.menubar, tearoff=False)
@@ -55,6 +74,7 @@ class RawSignalVisualizer(tk.Frame):
         self.parent.config(menu=self.menubar)
 
     def open_help_window(self):
+        """Open a help window displaying keyboard shortcuts and usage info."""
         help_window = tk.Toplevel(self.parent)
         help_window.title("Help")
         help_window.geometry("800x600")
@@ -75,36 +95,60 @@ class RawSignalVisualizer(tk.Frame):
         ok_button.pack(pady=10)
 
     def open_directory(self):
+        """Open a directory chooser dialog and load signals from the selected path."""
         dir_path = filedialog.askdirectory(title="Open Directory")
         if dir_path:
             self._load_from_directory(dir_path)
 
     def _load_from_directory(self, path, subset="accepted"):
+        """Load raw signals from the given directory.
 
+        Args:
+            path: Path to the directory containing signal data.
+            subset: Subset of signals to load (default: ``"accepted"``).
+        """
         raw_set = read_signals_from_dirs(
             path, n_jobs=self.n_jobs, parallel_options={"backend": "multiprocessing"}
         )[subset]
         self._data_init(raw_set)
 
     def _data_init(self, raw_signals: RawSignals):
+        """Initialize the UI with loaded signal data.
+
+        Args:
+            raw_signals: Collection of raw signals to display.
+        """
         self.set_data(raw_signals=raw_signals)
         self.reload_listbox_signals()
         self.reload_listbox_channels()
         self.plot_selected_signal()
 
     def set_data(self, raw_signals: RawSignals):
+        """Set the signal data and select the first signal and channel.
+
+        Args:
+            raw_signals: Collection of raw signals.
+        """
         self.raw_signals = raw_signals
         self.selected_signal: RawSignal = raw_signals[0]
         self.selected_channel = self.selected_signal.signal[:, 0]
 
     def make_raw_signals_list_representation(self, raw_signals: RawSignals):
+        """Create string representations of signals for the listbox.
 
+        Args:
+            raw_signals: Collection of raw signals.
+
+        Returns:
+            List of formatted strings with index and class label.
+        """
         return [
             "{}: {}".format(i, raw_signal.object_class)
             for i, raw_signal in enumerate(raw_signals)
         ]
 
     def bind_keys(self):
+        """Bind keyboard shortcuts for navigation and closing."""
         self.parent.bind("<Escape>", self.on_closing)
         self.parent.bind("<Down>", self.next_object)
         self.parent.bind("<Up>", self.prev_object)
@@ -112,6 +156,7 @@ class RawSignalVisualizer(tk.Frame):
         self.parent.bind("<Left>", self.prev_channel)
 
     def init_listbox_signals(self):
+        """Initialize the signal objects listbox widget."""
         self.frame_listbox = tk.Frame(self.parent, pady=1, padx=1)
         self.listbox_objects_var = tk.Variable(value=[])
         self.listbox_objects = tk.Listbox(
@@ -142,7 +187,7 @@ class RawSignalVisualizer(tk.Frame):
         self.frame_listbox.pack(side="left", fill="both")
 
     def reload_listbox_signals(self):
-
+        """Reload the signal objects listbox with current data."""
         self.listbox_objects_var.set(
             self.make_raw_signals_list_representation(self.raw_signals)
         )
@@ -154,7 +199,11 @@ class RawSignalVisualizer(tk.Frame):
         self.listbox_objects.selection_anchor(0)
 
     def object_selected(self, event):
+        """Handle selection of a signal object from the listbox.
 
+        Args:
+            event: Tkinter event triggered by listbox selection.
+        """
         try:
             selected_objects_idxs = self.listbox_objects.curselection()
             selected_object_idx = int(selected_objects_idxs[0])
@@ -175,6 +224,7 @@ class RawSignalVisualizer(tk.Frame):
             raise e
 
     def reload_listbox_channels(self):
+        """Reload the channels listbox with channels of the selected signal."""
         self.listbox_channels_variable.set(
             [str(ch_name) for ch_name in self.selected_signal.channel_names]
         )
@@ -186,7 +236,7 @@ class RawSignalVisualizer(tk.Frame):
         self.listbox_channels.selection_anchor(0)
 
     def init_listbox_channels_frame(self):
-
+        """Initialize the channels listbox widget."""
         frame_listbox = tk.Frame(self.parent, pady=1, padx=1)
         self.listbox_channels_variable = tk.Variable(value=[])
 
@@ -218,7 +268,11 @@ class RawSignalVisualizer(tk.Frame):
         frame_listbox.pack(side="left", fill="both")
 
     def channel_selected(self, event):
+        """Handle selection of a channel from the channels listbox.
 
+        Args:
+            event: Tkinter event triggered by listbox selection.
+        """
         try:
             selected_channel_idxs = self.listbox_channels.curselection()
             if len(selected_channel_idxs) == 1:
@@ -237,7 +291,7 @@ class RawSignalVisualizer(tk.Frame):
             raise e
 
     def plot_selected_signal(self):
-
+        """Plot the currently selected signal channel with signal, spectrogram, and magnitude spectrum."""
         obj_idx = self.listbox_objects.curselection()[0]
         obj_class = self.selected_signal.object_class
         channel_idx = self.listbox_channels.curselection()[0]
@@ -279,6 +333,7 @@ class RawSignalVisualizer(tk.Frame):
         self.canvas.draw()
 
     def plot_frame_init(self):
+        """Initialize the matplotlib plot frame with three subplots."""
         frame_listbox = tk.Frame(self.parent, pady=1, padx=1)
 
         self.figure = Figure(figsize=(20, 10))
@@ -299,9 +354,19 @@ class RawSignalVisualizer(tk.Frame):
         frame_listbox.pack(side="left", fill="both")
 
     def on_closing(self, event=None):
+        """Handle application closing.
+
+        Args:
+            event: Optional tkinter event.
+        """
         self.parent.destroy()
 
     def next_object(self, event):
+        """Navigate to the next signal object (wraps around).
+
+        Args:
+            event: Tkinter keyboard event.
+        """
         n_objects = len(self.raw_signals)
 
         curr_idx = self.listbox_objects.curselection()[0]
@@ -325,6 +390,11 @@ class RawSignalVisualizer(tk.Frame):
         self.plot_selected_signal()
 
     def prev_object(self, event):
+        """Navigate to the previous signal object (wraps around).
+
+        Args:
+            event: Tkinter keyboard event.
+        """
         n_objects = len(self.raw_signals)
 
         curr_idx = self.listbox_objects.curselection()[0]
@@ -348,7 +418,11 @@ class RawSignalVisualizer(tk.Frame):
         self.plot_selected_signal()
 
     def next_channel(self, event):
+        """Navigate to the next channel (wraps around).
 
+        Args:
+            event: Tkinter keyboard event.
+        """
         n_channels = self.selected_signal.signal.shape[1]
         curr_idx = self.listbox_channels.curselection()[0]
         next_idx = curr_idx
@@ -368,6 +442,11 @@ class RawSignalVisualizer(tk.Frame):
         self.plot_selected_signal()
 
     def prev_channel(self, event):
+        """Navigate to the previous channel (wraps around).
+
+        Args:
+            event: Tkinter keyboard event.
+        """
         n_channels = self.selected_signal.signal.shape[1]
         curr_idx = self.listbox_channels.curselection()[0]
         next_idx = curr_idx

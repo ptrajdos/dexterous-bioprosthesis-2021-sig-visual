@@ -108,3 +108,13 @@ make clean
 ```
 
 This removes build artifacts, virtual environments, and compiled executables.
+
+## Documentation
+
+API  documentation can be generated using make:
+
+```bash
+make docs
+```
+
+Then the docs are available in the `docs/` directory. The UML diagrams are generated in `docs/uml/`.
