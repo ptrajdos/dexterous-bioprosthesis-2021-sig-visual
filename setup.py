@@ -24,7 +24,9 @@ setup(
             "pyinstaller>=6.6.0",
             "setuptools>=69.5.1",
             "pdoc3>=0.11.1, <0.12",
-            "pylint>=3.3.9, <4.0.0"
+            "pylint>=3.3.9, <4.0.0",
+            "sphinx>=7.0.0",
+            "sphinx-rtd-theme>=2.0.0"
         ],
     },
     test_suite="test",

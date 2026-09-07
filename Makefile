@@ -12,6 +12,9 @@ INSTALL_LOG_FILE=${ROOTDIR}/install.log
 DOCS_DIR=${ROOTDIR}/docs
 UML_DIR=${ROOTDIR}/docs/uml
 DOCZIP=${ROOTDIR}/dexterous_bioprosthesis_sig_visual_docs.zip
+SPHINX_DIR=${ROOTDIR}/docs/sphinx
+SPHINX_BUILD_DIR=${SPHINX_DIR}/_build
+DOCPDF=${ROOTDIR}/dexterous_bioprosthesis_sig_visual_docs.pdf
 
 VENV_OPTIONS=
 
@@ -23,6 +26,8 @@ PDOC=pdoc3
 PYLINT= pylint
 DOT=dot
 PYREVERSE=pyreverse
+SPHINX_APIDOC=sphinx-apidoc
+SPHINX_BUILD=sphinx-build
 
 PYTHON_VERSION=3.9.7
 
@@ -116,6 +121,48 @@ uml: pypackages
 		rm -rf "$$tmpdir"; \
 	done
 
+
+docs-pdf: pypackages uml
+	@echo "Generating Sphinx PDF documentation..."
+	@rm -rf "$(SPHINX_DIR)"
+	@mkdir -p "$(SPHINX_DIR)"
+	${ACTIVATE}; $(SPHINX_APIDOC) -f -o "$(SPHINX_DIR)" "$(SRCDIR)"
+	@printf '%s\n' \
+		'dexterous_bioprosthesis_sig_visual' \
+		'======================================' \
+		'' \
+		'.. toctree::' \
+		'   :maxdepth: 4' \
+		'' \
+		'   modules' \
+		'   uml_diagrams' \
+		> "$(SPHINX_DIR)/index.rst"
+	@printf '%s\n' \
+		'UML Diagrams' \
+		'============' \
+		'' \
+		> "$(SPHINX_DIR)/uml_diagrams.rst"
+	@mkdir -p "$(SPHINX_DIR)/_uml_images"
+	@if [ -d "$(UML_DIR)" ]; then \
+		find "$(UML_DIR)" -name '*.svg' | sort | while read -r svg; do \
+			base="$$(basename $$svg .svg)"; \
+			dir="$$(basename $$(dirname $$svg))"; \
+			svgname="$${dir}_$${base}.svg"; \
+			cp "$$svg" "$(SPHINX_DIR)/_uml_images/$$svgname"; \
+			printf '%s\n' "$$dir / $$base" '--------------------------------------' '' ".. image:: _uml_images/$$svgname" '' >> "$(SPHINX_DIR)/uml_diagrams.rst"; \
+		done; \
+	fi
+	@echo 'import os, sys' > "$(SPHINX_DIR)/conf.py"
+	@echo 'sys.path.insert(0, os.path.abspath("$(ROOTDIR)"))' >> "$(SPHINX_DIR)/conf.py"
+	@echo 'project = "dexterous_bioprosthesis_sig_visual"' >> "$(SPHINX_DIR)/conf.py"
+	@echo 'author = "Paweł Trajdos"' >> "$(SPHINX_DIR)/conf.py"
+	@echo 'extensions = ["sphinx.ext.autodoc", "sphinx.ext.napoleon", "sphinx.ext.imgconverter"]' >> "$(SPHINX_DIR)/conf.py"
+	@echo 'master_doc = "index"' >> "$(SPHINX_DIR)/conf.py"
+	@echo 'latex_engine = "pdflatex"' >> "$(SPHINX_DIR)/conf.py"
+	${ACTIVATE}; $(SPHINX_BUILD) -b latex "$(SPHINX_DIR)" "$(SPHINX_BUILD_DIR)/latex"
+	$(MAKE) -C "$(SPHINX_BUILD_DIR)/latex" all-pdf
+	@cp "$(SPHINX_BUILD_DIR)/latex/dexterous_bioprosthesis_sig_visual.pdf" "$(DOCPDF)"
+	@echo "PDF documentation generated: $(DOCPDF)"
 
 docs-zip: docs
 	@echo "Creating documentation zip file..."
