@@ -304,6 +304,9 @@ class RawSignalVisualizer(tk.Frame):
         ax0.set_xlabel("Sample number")
         ax0.set_ylabel("Amplitude")
         ax0.set_title("Signal")
+        ax0.minorticks_on()
+        ax0.grid(True, which="major", alpha=0.5)
+        ax0.grid(True, which="minor", alpha=0.25)
         ax0.plot(self.selected_channel)
 
         ax1 = self.canvas.figure.axes[1]
@@ -319,6 +322,9 @@ class RawSignalVisualizer(tk.Frame):
         ax1.set_title("Spectrogram")
         ax1.set_ylabel("Frequency [Hz]")
         ax1.set_xlabel("Time [sec]")
+        ax1.minorticks_on()
+        ax1.grid(True, which="major", alpha=0.5)
+        ax1.grid(True, which="minor", alpha=0.25)
 
         ax2 = self.canvas.figure.axes[2]
         ax2.clear()
@@ -329,6 +335,9 @@ class RawSignalVisualizer(tk.Frame):
             scale="dB",
             color="C1",
         )
+        ax2.minorticks_on()
+        ax2.grid(True, which="major", alpha=0.5)
+        ax2.grid(True, which="minor", alpha=0.25)
 
         self.canvas.draw()
 
