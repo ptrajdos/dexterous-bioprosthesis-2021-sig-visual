@@ -356,7 +356,7 @@ class RawSignalVisualizer(tk.Frame):
         self.canvas.draw()
         self.canvas.get_tk_widget().pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
 
-        toolbar = NavigationToolbar2Tk(self.canvas, root)
+        toolbar = NavigationToolbar2Tk(self.canvas, self.parent)
         toolbar.update()
         self.canvas.get_tk_widget().pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
 
